@@ -22,7 +22,7 @@ import {Base_Test_} from "../../Base.sol";
 import {Environment as ENV} from "../../utils/Environment.sol";
 import {DeploymentParams as DP} from "../../../scripts/DeploymentParams.sol";
 
-contract Unit_Shared_Test_ is Base_Test_ {
+abstract contract Unit_Shared_Test_ is Base_Test_ {
     /*//////////////////////////////////////////////////////////////
                                 STRUCTS
     //////////////////////////////////////////////////////////////*/
@@ -211,6 +211,4 @@ contract Unit_Shared_Test_ is Base_Test_ {
         require(address(emissionSchedule) == DI.emissionSchedule.predicted, "EmissionSchedule address mismatch");
         require(address(adminVoting) == DI.adminVoting.predicted, "AdminVoting address mismatch");
     }
-
-    function test() public {}
 }
