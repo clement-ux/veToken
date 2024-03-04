@@ -167,6 +167,8 @@ contract Unit_Shared_Test_ is Base_Test_ {
             DP.MIN_CREATE_PROPOSAL_PCT,
             DP.PASSING_PCT
         );
+
+        vm.stopPrank();
     }
 
     /*//////////////////////////////////////////////////////////////
