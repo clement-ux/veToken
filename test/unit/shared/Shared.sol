@@ -193,17 +193,17 @@ abstract contract Unit_Shared_Test_ is Base_Test_ {
     }
 
     function _predictAddresses() internal {
-        DI.coreOwner.predicted = _computeAddress(deployer, DI.coreOwner.nonce); // 1. Core Owner
-        DI.govToken.predicted = _computeAddress(deployer, DI.govToken.nonce); // 2. GovToken
-        DI.tokenLocker.predicted = _computeAddress(deployer, DI.tokenLocker.nonce); // 3. Token Locker
-        DI.incentiveVoting.predicted = _computeAddress(deployer, DI.incentiveVoting.nonce); // 4. Incentive Voting
-        DI.vault.predicted = _computeAddress(deployer, DI.vault.nonce); // 5. Vault
-        DI.boostCalculator.predicted = _computeAddress(deployer, DI.boostCalculator.nonce); // 6. Boost Calculator
-        DI.emissionSchedule.predicted = _computeAddress(deployer, DI.emissionSchedule.nonce); // 7. Emission Schedule
-        DI.adminVoting.predicted = _computeAddress(deployer, DI.adminVoting.nonce); // 8. Admin Voting
+        DI.coreOwner.predicted = computeAddress(deployer, DI.coreOwner.nonce); // 1. Core Owner
+        DI.govToken.predicted = computeAddress(deployer, DI.govToken.nonce); // 2. GovToken
+        DI.tokenLocker.predicted = computeAddress(deployer, DI.tokenLocker.nonce); // 3. Token Locker
+        DI.incentiveVoting.predicted = computeAddress(deployer, DI.incentiveVoting.nonce); // 4. Incentive Voting
+        DI.vault.predicted = computeAddress(deployer, DI.vault.nonce); // 5. Vault
+        DI.boostCalculator.predicted = computeAddress(deployer, DI.boostCalculator.nonce); // 6. Boost Calculator
+        DI.emissionSchedule.predicted = computeAddress(deployer, DI.emissionSchedule.nonce); // 7. Emission Schedule
+        DI.adminVoting.predicted = computeAddress(deployer, DI.adminVoting.nonce); // 8. Admin Voting
     }
 
-    function _computeAddress(address _deployer, bytes1 _nonce) internal pure returns (address) {
+    function computeAddress(address _deployer, bytes1 _nonce) public pure returns (address) {
         return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), _deployer, _nonce)))));
     }
 
