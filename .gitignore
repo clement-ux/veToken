@@ -28,6 +28,7 @@ yarn-error.log
 /.coverage_contracts
 /coverage.json
 /coverage
+lcov*
 
 # eth-mutants
 /.eth-mutants
