@@ -171,6 +171,12 @@ abstract contract Unit_Shared_Test_ is Base_Test_ {
         vm.stopPrank();
     }
 
+    modifier commitTransferOwnership(address newOwner) {
+        vm.prank(coreOwner.owner());
+        coreOwner.commitTransferOwnership(newOwner);
+        _;
+    }
+
     /*//////////////////////////////////////////////////////////////
                                 HELPERS
     //////////////////////////////////////////////////////////////*/
