@@ -146,4 +146,40 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
             vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), currentEpoch + lockDuration), true
         );
     }
+
+    /// @notice This test is performed under the following conditions:
+    /// - on _epochWeightWrite:
+    ///     - accountEpoch < systemEpoch.
+    ///     - accountData.frozen == 0
+    ///     - accountData.locked != 0
+    ///     - accountEpoch % 256 != 0
+    ///     - bitfield & uint256(1) != 1 always (i.e. not unlocked between old epoch to current epoch)
+    /// - on getTotalWeightWrite: weight != 0.
+    /// - on _lock: block.timestamp is not in the final half of the epoch.
+    /// - on _lock:  previous == 0. (i.e. there is not lock expiring at the same epoch that user new lock expired).
+    /// - a 5 week lock is perfomed before the start of the test
+    function test_Lock_SecondLock_SecondEpoch_NotInFirstHalfOfEpoch() public lock(address(this), 1, 5) {
+        uint256 startTime = coreOwner.START_TIME();
+        uint256 epochLength = coreOwner.EPOCH_LENGTH();
+
+        // --- Assertions before --- //
+        uint256 oldEpoch = (block.timestamp - startTime) / epochLength;
+
+        // Start at the beginning of next epoch
+        uint256 epochToSkip = 8;
+        vm.warp(startTime + (oldEpoch + epochToSkip) * epochLength);
+        // --- Main call --- //
+        uint256 amountToLock = 1;
+        uint256 lockDuration = 5;
+        uint256 currentEpoch = oldEpoch + epochToSkip;
+        deal(address(govToken), address(this), amountToLock * 1 ether);
+        tokenLocker.lock(address(this), amountToLock, lockDuration);
+    }
+
+    modifier lock(address _user, uint256 _amount, uint256 _duration) {
+        deal(address(govToken), _user, _amount * 1 ether);
+        vm.prank(_user);
+        tokenLocker.lock(_user, _amount, _duration);
+        _;
+    }
 }
