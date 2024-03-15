@@ -158,15 +158,38 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
     /// - on _lock: block.timestamp is not in the final half of the epoch.
     /// - on _lock:  previous == 0. (i.e. there is not lock expiring at the same epoch that user new lock expired).
     /// - a 5 week lock is perfomed before the start of the test
-    function test_Lock_SecondLock_SecondEpoch_NotInFirstHalfOfEpoch() public lock(address(this), 1, 5) {
+    function test_Lock_SecondLock_SecondEpoch_NoUnlockOverlapping() public lock(address(this), 1, 5) {
         uint256 startTime = coreOwner.START_TIME();
         uint256 epochLength = coreOwner.EPOCH_LENGTH();
+        uint256 amountLockedBefore = 1;
+        uint256 previousLockDuration = 5;
 
         // --- Assertions before --- //
         uint256 oldEpoch = (block.timestamp - startTime) / epochLength;
+        // Total values
+        assertEq(vm.getTotalDecayRateBySlotReading(address(tokenLocker)), 1);
+        assertEq(vm.getTotalUpdateEpochBySlotReading(address(tokenLocker)), oldEpoch);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 3), 0);
+        assertEq(
+            vm.getTotalEpochWeightBySlotReading(address(tokenLocker), oldEpoch),
+            amountLockedBefore * previousLockDuration
+        );
+        // Account values
+        assertEq(
+            vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), oldEpoch),
+            amountLockedBefore * previousLockDuration
+        );
+        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 3), 0);
+        // Account lock data
+        assertEq(vm.getLockedAmountBySlotReading(address(tokenLocker), address(this)), amountLockedBefore);
+        assertEq(vm.getUnlockedAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false);
+        assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 3), false);
 
         // Start at the beginning of next epoch
-        uint256 epochToSkip = 8;
+        uint256 epochToSkip = 3;
         vm.warp(startTime + (oldEpoch + epochToSkip) * epochLength);
         // --- Main call --- //
         uint256 amountToLock = 1;
@@ -174,6 +197,32 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         uint256 currentEpoch = oldEpoch + epochToSkip;
         deal(address(govToken), address(this), amountToLock * 1 ether);
         tokenLocker.lock(address(this), amountToLock, lockDuration);
+
+        // --- Assertions after --- //
+        uint256 weight = amountLockedBefore * (previousLockDuration - epochToSkip) + amountToLock * lockDuration;
+        // Total values
+        assertEq(vm.getTotalDecayRateBySlotReading(address(tokenLocker)), amountLockedBefore + amountToLock);
+        assertEq(vm.getTotalUpdateEpochBySlotReading(address(tokenLocker)), currentEpoch);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), currentEpoch + lockDuration), amountToLock);
+        assertEq(vm.getTotalEpochWeightBySlotReading(address(tokenLocker), currentEpoch), weight);
+        // Account values
+        assertEq(vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), currentEpoch), weight);
+        assertEq(
+            vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), currentEpoch + lockDuration),
+            amountToLock
+        );
+        // Account lock data
+        assertEq(
+            vm.getLockedAmountBySlotReading(address(tokenLocker), address(this)), amountLockedBefore + amountToLock
+        );
+        assertEq(vm.getUnlockedAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false);
+        assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), previousLockDuration), true);
+        assertEq(
+            vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), currentEpoch + lockDuration), true
+        );
     }
 
     modifier lock(address _user, uint256 _amount, uint256 _duration) {
