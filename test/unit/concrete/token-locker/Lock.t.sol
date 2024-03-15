@@ -158,7 +158,10 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
     /// - on _lock: block.timestamp is not in the final half of the epoch.
     /// - on _lock:  previous == 0. (i.e. there is not lock expiring at the same epoch that user new lock expired).
     /// - a 5 week lock is perfomed before the start of the test
-    function test_Lock_SecondLock_SecondEpoch_NoUnlockOverlapping_WithoutUnlock() public lock(address(this), 1, 5) {
+    function test_Lock_SecondLock_SecondEpoch_NoUnlockOverlapping_WithoutUnlock()
+        public
+        lock(Modifier_Lock({skipBefore: 0, user: address(this), amountToLock: 1, duration: 5, skipAfter: 0}))
+    {
         uint256 startTime = coreOwner.START_TIME();
         uint256 epochLength = coreOwner.EPOCH_LENGTH();
         uint256 amountLockedBefore = 1;
@@ -236,7 +239,10 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
     /// - on _lock: block.timestamp is not in the final half of the epoch.
     /// - on _lock:  previous != 0. (i.e. there is lock expiring at the same epoch that user new lock expired).
     /// - a 5 week lock is perfomed before the start of the test
-    function test_Lock_SecondLock_SecondEpoch_WithUnlockOverlapping_WithoutUnlock() public lock(address(this), 1, 5) {
+    function test_Lock_SecondLock_SecondEpoch_WithUnlockOverlapping_WithoutUnlock()
+        public
+        lock(Modifier_Lock({skipBefore: 0, user: address(this), amountToLock: 1, duration: 5, skipAfter: 0}))
+    {
         uint256 startTime = coreOwner.START_TIME();
         uint256 epochLength = coreOwner.EPOCH_LENGTH();
         uint256 amountLockedBefore = 1;
@@ -302,12 +308,5 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
         assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), previousLockDuration), true);
         assertEq(previousLockDuration, currentEpoch + lockDuration);
-    }
-
-    modifier lock(address _user, uint256 _amount, uint256 _duration) {
-        deal(address(govToken), _user, _amount * 1 ether);
-        vm.prank(_user);
-        tokenLocker.lock(_user, _amount, _duration);
-        _;
     }
 }

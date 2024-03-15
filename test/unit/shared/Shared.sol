@@ -18,11 +18,12 @@ import {IIncentiveVoting} from "../../../contracts/interfaces/IIncentiveVoting.s
 import {IEmissionSchedule} from "../../../contracts/interfaces/IEmissionSchedule.sol";
 
 // Test imports
+import {Modifiers} from "./Modifiers.sol";
 import {Base_Test_} from "../../Base.sol";
 import {Environment as ENV} from "../../utils/Environment.sol";
 import {DeploymentParams as DP} from "../../../scripts/DeploymentParams.sol";
 
-abstract contract Unit_Shared_Test_ is Base_Test_ {
+abstract contract Unit_Shared_Test_ is Base_Test_, Modifiers {
     /*//////////////////////////////////////////////////////////////
                                 STRUCTS
     //////////////////////////////////////////////////////////////*/
