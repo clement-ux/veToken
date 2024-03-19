@@ -12,12 +12,26 @@ abstract contract Modifiers is Base_Test_ {
         uint256 skipAfter;
     }
 
+    struct Modifier_Freeze {
+        uint256 skipBefore;
+        address user;
+        uint256 skipAfter;
+    }
+
     modifier lock(Modifier_Lock memory _lock) {
         skip(_lock.skipBefore);
         deal(address(govToken), _lock.user, _lock.amountToLock * 1 ether);
         vm.prank(_lock.user);
         tokenLocker.lock(_lock.user, _lock.amountToLock, _lock.duration);
         skip(_lock.skipAfter);
+        _;
+    }
+
+    modifier freeze(Modifier_Freeze memory _freeze) {
+        skip(_freeze.skipBefore);
+        vm.prank(_freeze.user);
+        tokenLocker.freeze();
+        skip(_freeze.skipAfter);
         _;
     }
 }
