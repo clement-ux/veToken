@@ -61,6 +61,8 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         // --- Main call --- //
         uint256 amountToLock = 1;
         deal(address(govToken), address(this), amountToLock * 1 ether);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), amountToLock, 2);
         tokenLocker.lock(address(this), amountToLock, 1);
 
         // --- Assertions after --- //
@@ -119,6 +121,8 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         uint256 lockDuration = 2;
         uint256 currentEpoch = oldEpoch + epochToSkip;
         deal(address(govToken), address(this), amountToLock * 1 ether);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), amountToLock, lockDuration);
         tokenLocker.lock(address(this), amountToLock, lockDuration);
 
         // --- Assertions after --- //
@@ -199,6 +203,8 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         uint256 lockDuration = 5;
         uint256 currentEpoch = oldEpoch + epochToSkip;
         deal(address(govToken), address(this), amountToLock * 1 ether);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), amountToLock, lockDuration);
         tokenLocker.lock(address(this), amountToLock, lockDuration);
 
         // --- Assertions after --- //
@@ -280,6 +286,8 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         uint256 lockDuration = 2;
         uint256 currentEpoch = oldEpoch + epochToSkip;
         deal(address(govToken), address(this), amountToLock * 1 ether);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), amountToLock, lockDuration);
         tokenLocker.lock(address(this), amountToLock, lockDuration);
 
         // --- Assertions after --- //
@@ -363,6 +371,8 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         uint256 lockDuration = 2;
         uint256 currentEpoch = oldEpoch + epochToSkip;
         deal(address(govToken), address(this), amountToLock * 1 ether);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), amountToLock, lockDuration);
         tokenLocker.lock(address(this), amountToLock, lockDuration);
 
         // --- Assertions after --- //
@@ -450,6 +460,8 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         uint256 lockDuration = 2;
         uint256 currentEpoch = oldEpoch + epochToSkip;
         deal(address(govToken), address(this), amountToLock * 1 ether);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), amountToLock, lockDuration);
         tokenLocker.lock(address(this), amountToLock, lockDuration);
 
         // --- Assertions after --- //
@@ -539,6 +551,8 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         uint256 lockDuration = 2;
         uint256 currentEpoch = oldEpoch + epochToSkip;
         deal(address(govToken), address(this), amountToLock * 1 ether);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), amountToLock, lockDuration);
         tokenLocker.lock(address(this), amountToLock, lockDuration);
 
         // --- Assertions after --- //
@@ -598,6 +612,8 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         uint256 lockDuration = 2;
         uint256 currentEpoch = oldEpoch + epochToSkip;
         deal(address(govToken), address(this), amountToLock * 1 ether);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), amountToLock, lockDuration);
         tokenLocker.lock(address(this), amountToLock, lockDuration);
 
         // --- Assertions after --- //
@@ -643,10 +659,10 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         );
     }
 
-        /// @notice This test is performed under the following conditions:
-        /// - User lock 1 token in the locker for 5 epochs.
-        /// - User freeze the locked token.
-        /// - User lock 1 token in the locker for 2 epochs.
+    /// @notice This test is performed under the following conditions:
+    /// - User lock 1 token in the locker for 5 epochs.
+    /// - User freeze the locked token.
+    /// - User lock 1 token in the locker for 2 epochs.
     function test_Lock_SecondLock_WithFreeze()
         public
         lock(Modifier_Lock({skipBefore: 0, user: address(this), amountToLock: 1, duration: 5, skipAfter: 0}))
@@ -683,6 +699,8 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         uint256 lockDuration = 2; // Useless
         uint256 currentEpoch = oldEpoch + epochToSkip;
         deal(address(govToken), address(this), amountToLock * 1 ether);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), amountToLock, maxLockEpoch);
         tokenLocker.lock(address(this), amountToLock, lockDuration);
 
         // --- Assertions after --- //
@@ -706,6 +724,8 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
         assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), amountLockBefore + amountToLock);
         assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), true);
         assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
-        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), currentEpoch + lockDuration), false);
+        assertEq(
+            vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), currentEpoch + lockDuration), false
+        );
     }
 }
