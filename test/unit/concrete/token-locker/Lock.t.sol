@@ -84,6 +84,53 @@ contract Unit_Concrete_TokenLocker_Lock_ is Unit_Shared_Test_ {
     }
 
     /// @notice This test is performed under the following conditions:
+    /// Exactly the same as `test_Lock_InitialLock_FirstEpoch_InFinalHalfOfEpoch` test
+    /// but the lock is performed for someone else.
+    function testLock_InitialLock_FirstEpoch_LockForSomeoneElse() public {
+        // --- Assertions before --- //
+        // Total values
+        assertEq(vm.getTotalDecayRateBySlotReading(address(tokenLocker)), 0);
+        assertEq(vm.getTotalUpdateEpochBySlotReading(address(tokenLocker)), 0);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 2), 0);
+        assertEq(vm.getTotalEpochWeightBySlotReading(address(tokenLocker), 0), 0);
+        // Account values
+        assertEq(vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), 0), 0);
+        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 2), 0);
+        // Account lock data
+        assertEq(vm.getLockedAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getUnlockedAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false);
+        assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 0), false);
+
+        // --- Main call --- //
+        uint256 amountToLock = 1;
+        deal(address(govToken), alice, amountToLock * 1 ether);
+        vm.prank(alice);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), amountToLock, 2);
+        tokenLocker.lock(address(this), amountToLock, 1);
+
+        // --- Assertions after --- //
+        // Total values
+        assertEq(vm.getTotalDecayRateBySlotReading(address(tokenLocker)), amountToLock);
+        assertEq(vm.getTotalUpdateEpochBySlotReading(address(tokenLocker)), 0);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 2), amountToLock);
+        assertEq(vm.getTotalEpochWeightBySlotReading(address(tokenLocker), 0), amountToLock * 2);
+        // Account values
+        assertEq(vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), 0), amountToLock * 2);
+        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 2), amountToLock);
+        // Account lock data
+        assertEq(vm.getLockedAmountBySlotReading(address(tokenLocker), address(this)), amountToLock);
+        assertEq(vm.getUnlockedAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false);
+        assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 2), true);
+    }
+
+    /// @notice This test is performed under the following conditions:
     /// - on _epochWeightWrite:
     ///     - accountEpoch < systemEpoch.
     ///     - accountData.frozen == 0
