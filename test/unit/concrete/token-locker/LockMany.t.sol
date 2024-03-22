@@ -449,4 +449,71 @@ contract Unit_Concrete_TokenLocker_LockMany_ is Unit_Shared_Test_ {
         assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
         assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), unlockTimestampBefore), true);
     }
+
+    /// @notice Test many lock, Using following conditions:
+    /// - At epoch 0, lock 1 token for 2 epochs and lock 1 token for 3 epochs.
+    /// - Timejump to epoch 4.
+    /// - Lock 1 token for 2 epochs and 2 token for 3 epochs.
+    ///
+    /// Objectives here is to trigger the other non taken path line 929:
+    /// if (locked == 0) {
+    /// accountEpoch = systemEpoch;
+    /// break;
+    //  }
+    function test_LockMany_2Locks_BothAfter2Unlocks()
+        public
+        lock(Modifier_Lock({skipBefore: 0, user: address(this), amountToLock: 1, duration: 2, skipAfter: 0}))
+        lock(Modifier_Lock({skipBefore: 0, user: address(this), amountToLock: 1, duration: 3, skipAfter: 0}))
+    {
+        uint256 amountLockBefore = 1;
+        uint256 unlockTimestampBefore = 3;
+        uint256 oldEpoch = (block.timestamp - startTime) / epochLength;
+
+        TokenLocker.LockData[] memory locks = new TokenLocker.LockData[](2);
+        locks[0] = TokenLocker.LockData({amount: 1, epochsToUnlock: 3});
+        locks[1] = TokenLocker.LockData({amount: 2, epochsToUnlock: 3});
+        uint256 totalAmountLocked = locks[0].amount + locks[1].amount;
+
+        // Start at the beginning of next epoch
+        uint256 epochToSkip = 4;
+        vm.warp(startTime + (oldEpoch + epochToSkip) * epochLength);
+        uint256 currentEpoch = oldEpoch + epochToSkip;
+
+        deal(address(govToken), address(this), totalAmountLocked * 1 ether);
+
+        // Main call
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LocksCreated(address(this), locks);
+        tokenLocker.lockMany(address(this), locks);
+
+        // Assertions after
+        uint256 unlockEpoch1 = epochToSkip + locks[0].epochsToUnlock;
+        uint256 weight = WizardTokenLocker.getWeightForManyLock(locks);
+
+        // Total values
+        assertEq(vm.getTotalDecayRateBySlotReading(address(tokenLocker)), totalAmountLocked);
+        assertEq(vm.getTotalUpdateEpochBySlotReading(address(tokenLocker)), currentEpoch);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), unlockTimestampBefore), amountLockBefore);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), unlockEpoch1), totalAmountLocked);
+        assertEq(vm.getTotalEpochWeightBySlotReading(address(tokenLocker), currentEpoch), weight);
+        // Account values
+        assertEq(vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), unlockTimestampBefore), 0);
+        assertEq(vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), currentEpoch), weight);
+        assertEq(
+            vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), unlockTimestampBefore),
+            amountLockBefore
+        );
+        assertEq(
+            vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), unlockEpoch1), totalAmountLocked
+        );
+
+        // Account lock data
+        assertEq(vm.getLockedAmountBySlotReading(address(tokenLocker), address(this)), totalAmountLocked);
+        assertEq(vm.getUnlockedAmountBySlotReading(address(tokenLocker), address(this)), amountLockBefore * 2);
+        assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0); // Should remain the same
+        assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false); // Should remain the same
+        assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), unlockTimestampBefore), true);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), unlockEpoch1), true);
+    }
 }
