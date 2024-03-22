@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {SlotFinder} from "./SlotFinder.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {SlotFinder} from "./SlotFinder.sol";
+
+import {TokenLocker} from "../../contracts/TokenLocker.sol";
 
 library WizardTokenLocker {
     /*//////////////////////////////////////////////////////////////
@@ -182,5 +184,19 @@ library WizardTokenLocker {
         uint256 offSet = _epoch % valuePerSlot + 1;
         return (data << (256 - offSet) >> (256 - 1)) == bytes32(uint256(1));
         //return uint256(data) == (uint256(1) << (_epoch % valuePerSlot)); // Both way seems to works.
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                HELPERS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Get the weight increase for many locks
+    function getWeightForManyLock(TokenLocker.LockData[] memory locks) public pure returns (uint256) {
+        uint256 weight;
+        uint256 len = locks.length;
+        for (uint256 i; i < len; ++i) {
+            weight += locks[i].amount * locks[i].epochsToUnlock;
+        }
+        return weight;
     }
 }
