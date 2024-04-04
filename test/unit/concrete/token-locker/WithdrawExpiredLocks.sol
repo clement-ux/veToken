@@ -36,6 +36,15 @@ contract Unit_Concrete_TokenLocker_WithdrawExpiredLocks_ is Unit_Shared_Test_ {
         tokenLocker.withdrawExpiredLocks(0);
     }
 
+    function test_RevertWhen_WithdrawExpiredLocks_Because_ExceedMaxLock_WhenRelock()
+        public
+        lock(Modifier_Lock({skipBefore: 0, user: address(this), amountToLock: 1, duration: 5, skipAfter: 5 * epochLength}))
+    {
+        uint256 maxLockEpochs = tokenLocker.MAX_LOCK_EPOCHS();
+        vm.expectRevert("Exceeds MAX_LOCK_EPOCHS");
+        tokenLocker.withdrawExpiredLocks(maxLockEpochs + 1);
+    }
+
     /*//////////////////////////////////////////////////////////////
                             VALIDATING TESTS
     //////////////////////////////////////////////////////////////*/
@@ -254,5 +263,53 @@ contract Unit_Concrete_TokenLocker_WithdrawExpiredLocks_ is Unit_Shared_Test_ {
         assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
         assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 3), true);
         assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 5), true);
+    }
+
+    /// @notice Test freeze, Using following conditions:
+    /// - Lock 1 token for 5 epochs
+    /// - Skip 5 epochs
+    /// - Relock expired locks
+    function test_WithdrawExpiredLocks_Relocking()
+        public
+        lock(Modifier_Lock({skipBefore: 0, user: address(this), amountToLock: 1, duration: 5, skipAfter: 0}))
+    {
+        uint256 oldEpoch = (block.timestamp - startTime) / epochLength;
+        // No need to add assertions before as exactly the same as the test
+        // `Unit_Concrete_TokenLocker_Lock_::test_Lock_SecondLock_SecondEpoch_WithoutUnlockOverlapping_WithoutUnlock`
+
+        // Start at the beginning of next epoch
+        uint256 epochToSkip = 5;
+        vm.warp(startTime + (oldEpoch + epochToSkip) * epochLength);
+        uint256 currentEpoch = oldEpoch + epochToSkip;
+
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LockCreated(address(this), 1, 10);
+        tokenLocker.withdrawExpiredLocks(10);
+        uint256 lockedToken = 1;
+        uint256 lockedEpoch = 10;
+
+        // Assertions
+        uint256 weight = lockedToken * lockedEpoch;
+        // Total values
+        assertEq(vm.getTotalDecayRateBySlotReading(address(tokenLocker)), lockedToken);
+        assertEq(vm.getTotalUpdateEpochBySlotReading(address(tokenLocker)), currentEpoch);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 5), 1);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), lockedEpoch + epochToSkip), lockedToken);
+        assertEq(vm.getTotalEpochWeightBySlotReading(address(tokenLocker), currentEpoch), weight);
+        // Account values
+        assertEq(vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), currentEpoch), weight);
+        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 5), 1);
+        assertEq(
+            vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), lockedEpoch + epochToSkip),
+            lockedToken
+        );
+        // Account lock data
+        assertEq(vm.getLockedAmountBySlotReading(address(tokenLocker), address(this)), lockedToken);
+        assertEq(vm.getUnlockedAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false);
+        assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 5), true);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), lockedEpoch + epochToSkip), true);
     }
 }
