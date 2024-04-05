@@ -72,4 +72,16 @@ abstract contract Modifiers is Base_Test_ {
         skip(_freeze.skipAfter);
         _;
     }
+
+    modifier enableWithdrawWithPenalty() {
+        vm.prank(coreOwner.owner());
+        tokenLocker.setPenaltyWithdrawalEnabled(true);
+        _;
+    }
+
+    modifier disableWithdrawWithPenalty() {
+        vm.prank(coreOwner.owner());
+        tokenLocker.setPenaltyWithdrawalEnabled(false);
+        _;
+    }
 }
