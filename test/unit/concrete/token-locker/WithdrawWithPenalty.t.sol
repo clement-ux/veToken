@@ -216,7 +216,7 @@ contract Unit_Concrete_TokenLocker_WithdrawWithPenalty_ is Unit_Shared_Test_ {
         assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0);
         assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false);
         assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
-        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 5), true); // This should be false. Can it be a vulnerability?
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 5), true); // Finding: This should be false. Can it be a vulnerability?
         // Withdrawn amount
         assertEq(amountWithdrawn, 1 ether);
         assertEq(govToken.balanceOf(feeReceiver), 1 ether);
@@ -595,5 +595,125 @@ contract Unit_Concrete_TokenLocker_WithdrawWithPenalty_ is Unit_Shared_Test_ {
         assertEq(amountWithdrawn, 1 ether);
         assertEq(govToken.balanceOf(feeReceiver), 1 ether);
         assertEq(govToken.balanceOf(address(this)), 1 ether);
+    }
+
+    /// @notice Test freeze, Using following conditions:
+    /// - Lock 1 token for 3 epochs
+    /// - Lock 2 token for 5 epochs
+    /// - Skip 3 epochs
+    /// - Withdraw maximum token with penalty
+    function test_WithdrawWithPenalty_PartialyUnlocked_MultiplePosition_RightAfterLocking_MaxAmount()
+        public
+        lockMany(
+            Modifier_LockMany({
+                skipBefore: 0,
+                user: address(this),
+                amountToLock: [1, 2, 0, 0, 0],
+                duration: [3, 5, 0, 0, 0],
+                skipAfter: 0
+            })
+        )
+        enableWithdrawWithPenalty
+    {
+        uint256 oldEpoch = (block.timestamp - startTime) / epochLength;
+        // No need to add assertions before as exactly the same as the test
+        // `Unit_Concrete_TokenLocker_Lock_::test_Lock_SecondLock_SecondEpoch_WithoutUnlockOverlapping_WithoutUnlock`
+
+        // Start at the beginning of next epoch
+        uint256 epochToSkip = 3;
+        vm.warp(startTime + (oldEpoch + epochToSkip) * epochLength);
+        uint256 currentEpoch = oldEpoch + epochToSkip;
+
+        (uint256 amountWithdrawn) = tokenLocker.withdrawWithPenalty(MAX);
+
+        // Assertions
+        uint256 weight = 0;
+        // Total values
+        assertEq(vm.getTotalDecayRateBySlotReading(address(tokenLocker)), 0);
+        assertEq(vm.getTotalUpdateEpochBySlotReading(address(tokenLocker)), currentEpoch);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 3), 1); // Finding: Shouldn't it be 0?
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 5), 0);
+        assertEq(vm.getTotalEpochWeightBySlotReading(address(tokenLocker), currentEpoch), weight);
+        // Account values
+        assertEq(vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), currentEpoch), weight);
+        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 3), 1); // Finding: Shouldn't it be 0?
+        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 5), 0);
+        // Account lock data
+        assertEq(vm.getLockedAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getUnlockedAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false);
+        assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 3), true); // Finding: Shouldn't it be false?
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 5), false);
+        // Withdrawn amount
+        assertGt(amountWithdrawn, 0);
+        assertLt(amountWithdrawn, 3 ether);
+    }
+
+    /// @notice Test freeze, Using following conditions:
+    /// - Lock 1 token for 3 epochs
+    /// - Lock 2 token for 5 epochs
+    /// - Skip 2 epochs
+    /// - Withdraw 1 token with penalty equal to 1 ether
+    function test_WithdrawWithPenalty_PartialyUnlocked_MultiplePosition_RightAfterLocking_PartialAmount_WithLeftOver()
+        public
+        lockMany(
+            Modifier_LockMany({
+                skipBefore: 0,
+                user: address(this),
+                amountToLock: [1, 3, 3, 0, 0],
+                duration: [3, 5, 7, 0, 0],
+                skipAfter: 0
+            })
+        )
+        enableWithdrawWithPenalty
+    {
+        uint256 oldEpoch = (block.timestamp - startTime) / epochLength;
+        // No need to add assertions before as almost the same as the test
+        // `Unit_Concrete_TokenLocker_Lock_::test_Lock_SecondLock_SecondEpoch_WithoutUnlockOverlapping_WithoutUnlock`
+
+        // Start at the beginning of next epoch
+        uint256 epochToSkip = 3;
+        vm.warp(startTime + (oldEpoch + epochToSkip) * epochLength);
+        uint256 currentEpoch = oldEpoch + epochToSkip;
+
+        address feeReceiver = coreOwner.feeReceiver();
+        vm.expectEmit({emitter: address(govToken)});
+        emit IERC20.Transfer(address(tokenLocker), address(this), 2 ether);
+        vm.expectEmit({emitter: address(govToken)});
+        emit IERC20.Transfer(address(tokenLocker), feeReceiver, 1 ether);
+        vm.expectEmit({emitter: address(tokenLocker)});
+        emit TokenLocker.LocksWithdrawn(address(this), 2 ether, 1 ether);
+        (uint256 amountWithdrawn) = tokenLocker.withdrawWithPenalty(2);
+
+        // Assertions
+        uint256 weight = 1 * 2 + 3 * 4;
+        // Total values
+        assertEq(vm.getTotalDecayRateBySlotReading(address(tokenLocker)), 4);
+        assertEq(vm.getTotalUpdateEpochBySlotReading(address(tokenLocker)), currentEpoch);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 3), 1); // Finding: Shouldn't it be 0?
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 5), 1);
+        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 7), 3);
+        assertEq(vm.getTotalEpochWeightBySlotReading(address(tokenLocker), currentEpoch), weight);
+        assertEq(tokenLocker.getTotalWeightAt(currentEpoch), weight);
+        // Account values
+        assertEq(vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), currentEpoch), weight);
+        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 3), 1); // Finding: Shouldn't it be 0?
+        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 5), 1);
+        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 7), 3);
+        // Account lock data
+        assertEq(vm.getLockedAmountBySlotReading(address(tokenLocker), address(this)), 4);
+        assertEq(vm.getUnlockedAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0);
+        assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false);
+        assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 3), true); // Finding: Shouldn't it be false?
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 5), true);
+        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 7), true);
+        // Withdrawn amount
+        assertEq(amountWithdrawn, 2 ether);
+        assertEq(govToken.balanceOf(feeReceiver), 1 ether);
+        assertEq(govToken.balanceOf(address(this)), 2 ether);
     }
 }
