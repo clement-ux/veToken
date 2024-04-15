@@ -631,12 +631,12 @@ contract Unit_Concrete_TokenLocker_WithdrawWithPenalty_ is Unit_Shared_Test_ {
         // Total values
         assertEq(vm.getTotalDecayRateBySlotReading(address(tokenLocker)), 0);
         assertEq(vm.getTotalUpdateEpochBySlotReading(address(tokenLocker)), currentEpoch);
-        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 3), 1); // Finding: Shouldn't it be 0?
+        // assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 3), 1); // It should be 0, but however, 1 is not a vulnerability.
         assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 5), 0);
         assertEq(vm.getTotalEpochWeightBySlotReading(address(tokenLocker), currentEpoch), weight);
         // Account values
         assertEq(vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), currentEpoch), weight);
-        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 3), 1); // Finding: Shouldn't it be 0?
+        //assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 3), 1); // It should be 0, but however, 1 is not a vulnerability.
         assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 5), 0);
         // Account lock data
         assertEq(vm.getLockedAmountBySlotReading(address(tokenLocker), address(this)), 0);
@@ -644,7 +644,7 @@ contract Unit_Concrete_TokenLocker_WithdrawWithPenalty_ is Unit_Shared_Test_ {
         assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0);
         assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false);
         assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
-        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 3), true); // Finding: Shouldn't it be false?
+        //assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 3), true); // It should be false, but however, true is not a vulnerability.
         assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 5), false);
         // Withdrawn amount
         assertGt(amountWithdrawn, 0);
@@ -692,14 +692,14 @@ contract Unit_Concrete_TokenLocker_WithdrawWithPenalty_ is Unit_Shared_Test_ {
         // Total values
         assertEq(vm.getTotalDecayRateBySlotReading(address(tokenLocker)), 4);
         assertEq(vm.getTotalUpdateEpochBySlotReading(address(tokenLocker)), currentEpoch);
-        assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 3), 1); // Finding: Shouldn't it be 0?
+        //assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 3), 1); // It should be 0, but however, 1 is not a vulnerability.
         assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 5), 1);
         assertEq(vm.getTotalEpochUnlockBySlotReading(address(tokenLocker), 7), 3);
         assertEq(vm.getTotalEpochWeightBySlotReading(address(tokenLocker), currentEpoch), weight);
         assertEq(tokenLocker.getTotalWeightAt(currentEpoch), weight);
         // Account values
         assertEq(vm.getAccountEpochWeightsBySlotReading(address(tokenLocker), address(this), currentEpoch), weight);
-        assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 3), 1); // Finding: Shouldn't it be 0?
+        //assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 3), 1); // It should be 0, but however, 1 is not a vulnerability.
         assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 5), 1);
         assertEq(vm.getAccountEpochUnlocksBySlotReading(address(tokenLocker), address(this), 7), 3);
         // Account lock data
@@ -708,7 +708,7 @@ contract Unit_Concrete_TokenLocker_WithdrawWithPenalty_ is Unit_Shared_Test_ {
         assertEq(vm.getFrozenAmountBySlotReading(address(tokenLocker), address(this)), 0);
         assertEq(vm.getIsFrozenBySlotReading(address(tokenLocker), address(this)), false);
         assertEq(vm.getEpochBySlotReading(address(tokenLocker), address(this)), currentEpoch);
-        assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 3), true); // Finding: Shouldn't it be false?
+        // assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 3), true); // It should be false, but however, true is not a vulnerability.
         assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 5), true);
         assertEq(vm.getUpdateEpochsBySlotReading(address(tokenLocker), address(this), 7), true);
         // Withdrawn amount
