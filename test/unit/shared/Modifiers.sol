@@ -29,11 +29,7 @@ abstract contract Modifiers is Base_Test_ {
     }
 
     modifier lock(Modifier_Lock memory _lock) {
-        skip(_lock.skipBefore);
-        deal(address(govToken), _lock.user, _lock.amountToLock * 1 ether);
-        vm.prank(_lock.user);
-        tokenLocker.lock(_lock.user, _lock.amountToLock, _lock.duration);
-        skip(_lock.skipAfter);
+        _modifier_lock(_lock);
         _;
     }
 
@@ -71,5 +67,25 @@ abstract contract Modifiers is Base_Test_ {
         tokenLocker.freeze();
         skip(_freeze.skipAfter);
         _;
+    }
+
+    modifier enableWithdrawWithPenalty() {
+        vm.prank(coreOwner.owner());
+        tokenLocker.setPenaltyWithdrawalEnabled(true);
+        _;
+    }
+
+    modifier disableWithdrawWithPenalty() {
+        vm.prank(coreOwner.owner());
+        tokenLocker.setPenaltyWithdrawalEnabled(false);
+        _;
+    }
+
+    function _modifier_lock(Modifier_Lock memory _lock) internal {
+        skip(_lock.skipBefore);
+        deal(address(govToken), _lock.user, _lock.amountToLock * 1 ether);
+        vm.prank(_lock.user);
+        tokenLocker.lock(_lock.user, _lock.amountToLock, _lock.duration);
+        skip(_lock.skipAfter);
     }
 }
